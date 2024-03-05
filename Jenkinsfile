@@ -31,7 +31,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonar-server') {
-                    sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=toto-gros -Dsonar.projectName='toto-gros'"
+                    sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=tata-gro -Dsonar.projectName='tata-gro'"
                 }
             }
         }
