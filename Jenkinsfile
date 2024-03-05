@@ -95,10 +95,11 @@ pipeline {
             }
         }
 
-        stage('Nettoyage') {
-            steps {
-                sh 'minikube stop && minikube delete'
+        post {
+            always {
+                 // Clean up Minikube cluster
+                 sh 'minikube stop && minikube delete'
             }
-        }
+       }
     }
 }
