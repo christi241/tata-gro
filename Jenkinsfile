@@ -1,46 +1,45 @@
 pipeline {
-  agent any
-  tools {
-    maven "M3"
-  }
-
-  environment {
-      def mvn = tool 'M3'
-
-      NEXUS_VERSION = "nexus3"
-      NEXUS_PROTOCOL = "http"
-      NEXUS_URL = "172.18.0.3:8081"
-      NEXUS_REPOSITORY = "kubernatwreposetorie"
-      NEXUS_CREDENTIAL_ID = "nexusCredential"
-      ARTIFACT_VERSION = "${BUILD_NUMBER}"
-  }
-
-  stages {
-    stage('Git Check out') {
-      steps{
-        checkout scm
-      }
+    agent any
+    tools {
+        maven "M3"
     }
 
-    stage('Maven build') {
-      steps {
-        sh "${mvn}/bin/mvn clean package "
-      }
+    environment {
+        def mvn = tool 'M3'
+
+        NEXUS_VERSION = "nexus3"
+        NEXUS_PROTOCOL = "http"
+        NEXUS_URL = "172.18.0.3:8081"
+        NEXUS_REPOSITORY = "kubernatwreposetorie"
+        NEXUS_CREDENTIAL_ID = "nexusCredential"
+        ARTIFACT_VERSION = "${BUILD_NUMBER}"
     }
 
-    stage('SonarQube Analysis') {
-      steps{
-        withSonarQubeEnv('sonar-server') {
-        sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=toto-gros -Dsonar.projectName='toto-gros'"
-      }
-    }
+    stages {
+        stage('Git Check out') {
+            steps {
+                checkout scm
+            }
+        }
 
-  }
+        stage('Maven build') {
+            steps {
+                sh "${mvn}/bin/mvn clean package "
+            }
+        }
 
-  stage("publish to nexus") {
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonar-server') {
+                    sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=toto-gros -Dsonar.projectName='toto-gros'"
+                }
+            }
+        }
+
+        stage("Publish to Nexus") {
             steps {
                 script {
-                    // Read POM xml file using 'readMavenPom' step , this step 'readMavenPom' is included in: https://plugins.jenkins.io/pipeline-utility-steps
+                    // Read POM xml file using 'readMavenPom' step, this step 'readMavenPom' is included in: https://plugins.jenkins.io/pipeline-utility-steps
                     pom = readMavenPom file: "pom.xml";
                     // Find built artifact under target folder
                     filesByGlob = findFiles(glob: "target/*.${pom.packaging}");
@@ -77,34 +76,29 @@ pipeline {
                 }
             }
         }
- }
 
+        stage('Installer et démarrer Minikube') {
+            steps {
+                sh 'minikube start --vm-driver=docker'
+            }
+        }
 
- stage(' installer et Démarrer Minikube') {
-     steps {
-            sh 'curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/'
-         sh 'minikube start --vm-driver=docker' // Démarrer Minikube avec le pilote Docker
-     }
- }
+        stage('Déployer sur Kubernetes') {
+            steps {
+                sh 'kubectl apply -f tata-gro/tata-gro-manifest.yaml'
+            }
+        }
 
- stage('Deploy to Kubernetes') {
-     steps {
-         sh 'kubectl apply -f tata-gro/tata-gro-manifest.yaml' // Utilisez le chemin relatif vers votre fichier de manifeste Kubernetes
-     }
- }
+        stage('Vérifier le déploiement') {
+            steps {
+                sh 'kubectl get pods'
+            }
+        }
 
-stage('Verify Deployment') {
-    steps {
-        sh 'kubectl get pods' // Vérifiez les pods déployés
+        stage('Nettoyage') {
+            steps {
+                sh 'minikube stop && minikube delete'
+            }
+        }
     }
-}
-
-stage('Clean up') {
-    steps {
-        sh 'minikube stop' // Arrêtez Minikube
-        sh 'minikube delete' // Supprimez Minikube
-    }
-}
-
-
 }
