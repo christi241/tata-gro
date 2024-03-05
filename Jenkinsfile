@@ -15,7 +15,7 @@ pipeline {
         ARTIFACT_VERSION = "${BUILD_NUMBER}"
     }
 
-
+    stages {
         stage('Git Check out') {
             steps {
                 checkout scm
@@ -95,10 +95,10 @@ pipeline {
             }
         }
 
-        post {
-            always {
-                 // Clean up Minikube cluster
-                 sh 'minikube stop && minikube delete'
+        stage('Nettoyage') {
+            steps {
+                sh 'minikube stop && minikube delete'
             }
-       }
+        }
+    }
 }
