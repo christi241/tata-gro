@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tata-gro-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: tata-gro
+  template:
+    metadata:
+      labels:
+        app: tata-gro
+    spec:
+      containers:
+        - name: tata-gro-container
+          image: minikube:latest
+          ports:
+            - containerPort: 8080
